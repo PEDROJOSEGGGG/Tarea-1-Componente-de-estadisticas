@@ -45,4 +45,28 @@ avatarUrl: "https://th.bing.com/th/id/OIP.3vZkzvQkzXkV7gk8lFzFJwHaEK?w=310&h=200
         status: "active",
         role: "admin",
     },
+
+        {
+        id: 4,
+        name: "Cristiano Ronaldo",
+        email: "cristiano.ronaldo@empresa.com",
+        position: "Administrador del Sistema",
+        department: "Tecnologia",
+        salary: 15000,
+        hireDate: "2018-05-10",
+        status: "active",
+        role: "admin",
+    },
+
+        {
+        id: 4,
+        name: "Zero two",
+        email: "zero.two@empresa.com",
+        position: "Administrador del Sistema",
+        department: "Tecnologia",
+        salary: 15000,
+        hireDate: "2018-05-10",
+        status: "active",
+        role: "admin",
+    },
 ];
