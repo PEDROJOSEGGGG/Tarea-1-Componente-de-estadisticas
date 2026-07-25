@@ -18,7 +18,7 @@ const statusLabels: Record<string, string> = {
 };
 
 function EmployeeCard({ employee, onSelect }: EmployeeCardProps) {
-    const { name, position, department, status, avatarUrl } = employee;
+    const { name, position, Departament, status, avatarUrl } = employee;
 
     return (
         <div
@@ -52,7 +52,7 @@ function EmployeeCard({ employee, onSelect }: EmployeeCardProps) {
                     background: '#dbeafe', color: '#1d4ed8',
                     padding: '2px 8px', borderRadius: '12px', fontSize: '12px'
                 }}>
-                    {department}
+                    {Departament}
                 </span>
                 <span style={{
                     background: statusColors[ status ],
