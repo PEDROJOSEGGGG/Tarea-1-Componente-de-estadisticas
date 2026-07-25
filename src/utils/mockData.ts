@@ -47,10 +47,10 @@ avatarUrl: "https://th.bing.com/th/id/OIP.3vZkzvQkzXkV7gk8lFzFJwHaEK?w=310&h=200
     },
 
         {
-        id: 4,
+        id: 5,
         name: "Cristiano Ronaldo",
         email: "cristiano.ronaldo@empresa.com",
-        position: "Administrador del Sistema",
+        position: "Director de Tecnologia",
         department: "Tecnologia",
         salary: 15000,
         hireDate: "2018-05-10",
@@ -59,14 +59,14 @@ avatarUrl: "https://th.bing.com/th/id/OIP.3vZkzvQkzXkV7gk8lFzFJwHaEK?w=310&h=200
     },
 
         {
-        id: 4,
+        id: 6,
         name: "Zero two",
         email: "zero.two@empresa.com",
-        position: "Administrador del Sistema",
+        position: "Auxiliar de Tecnologia",
         department: "Tecnologia",
         salary: 15000,
         hireDate: "2018-05-10",
         status: "active",
-        role: "admin",
+        role: "employee",
     },
 ];
