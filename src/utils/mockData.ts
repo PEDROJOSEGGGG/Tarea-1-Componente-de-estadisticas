@@ -66,7 +66,7 @@ avatarUrl: "https://th.bing.com/th/id/OIP.3vZkzvQkzXkV7gk8lFzFJwHaEK?w=310&h=200
         department: "Tecnologia",
         salary: 15000,
         hireDate: "2018-05-10",
-        status: "active",
+        status: "inactive",
         role: "employee",
     },
 ];
