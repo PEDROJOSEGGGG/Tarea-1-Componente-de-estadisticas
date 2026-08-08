@@ -36,8 +36,8 @@ avatarUrl: "https://th.bing.com/th/id/OIP.3vZkzvQkzXkV7gk8lFzFJwHaEK?w=310&h=200
     },
     {
         id: 4,
-        name: "Roberto Silva",
-        email: "roberto.silva@empresa.com",
+        name: "Pedro Barillas",
+        email: "pedro.barillas@empresa.com",
         position: "Administrador del Sistema",
         department: "Tecnologia",
         salary: 15000,
