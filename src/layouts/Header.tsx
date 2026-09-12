@@ -61,4 +61,3 @@ function Header({ user, onLogout }: HeaderProps) {
 }
 
 export default Header;
-
