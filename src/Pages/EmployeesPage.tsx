@@ -1,19 +1,33 @@
 // src/pages/EmployeesPage.tsx
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback, useMemo } from 'react';
 import type { Employee, Department, EmployeeStatus, EmployeeRole } from '../types';
 import EmployeeCard from '../components/EmployeeCard';
-import  StatsBadge from "../components/StatsBadge";
-import FormField from "../components/FormField";
-import Modal from "../components/Modal";
-import { useEmployeeStore } from '../store/employeeStore';
+import StatsBadge from '../components/StatsBadge';
+import FormField from '../components/FormField';
+import Modal from '../components/Modal';
+import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from '../hooks/useEmployees';
 
 function EmployeesPage() {
-  const { employees, isLoading: loading, error, fetchEmployees, addEmployee, updateEmployee, deleteEmployee } = useEmployeeStore();
-
-  // Estado de los filtros
+  // Estado de los filtros — esto sigue siendo estado LOCAL (de la UI), no del servidor
   const [search, setSearch] = useState<string>('');
   const [selectedDepartment, setSelectedDepartment] = useState<Department | ''>('');
   const [selectedStatus, setSelectedStatus] = useState<EmployeeStatus | ''>('');
+
+  const { data, isLoading: loading, isError, error: queryError } = useEmployees({
+    search: search || undefined,
+    department: selectedDepartment || undefined,
+    status: selectedStatus || undefined,
+  });
+
+  const employees = data?.data || [];
+
+  const { data: allData } = useEmployees({});
+  const allEmployees = useMemo(() => allData?.data ?? [], [allData]);
+
+  const totalEmployees = allEmployees.length;
+  const activeEmployees = allEmployees.filter(emp => emp.status === 'active').length;
+  const onLeaveEmployees = allEmployees.filter(emp => emp.status === 'on_leave').length;
+  const inactiveEmployees = allEmployees.filter(emp => emp.status === 'inactive').length;
 
   // Estado del formulario
   const [showForm, setShowForm] = useState<boolean>(false);
@@ -27,28 +41,11 @@ function EmployeesPage() {
   const [newRole, setNewRole] = useState<EmployeeRole>('employee');
   const [newPhone, setNewPhone] = useState<string>('');
   const [newAvatarUrl, setNewAvatarUrl] = useState<string>('');
+  const [formError, setFormError] = useState<string | null>(null);
 
-  useEffect(() => {
-    void fetchEmployees();
-  }, [fetchEmployees]);
-
-  // Filtrar empleados según los criterios activos
-  const filteredEmployees = employees.filter(emp => {
-    const matchesSearch = emp.name.toLowerCase().includes(search.toLowerCase()) ||
-                          emp.email.toLowerCase().includes(search.toLowerCase()) ||
-                          emp.position.toLowerCase().includes(search.toLowerCase());
-
-    const matchesDepartment = !selectedDepartment || emp.department === selectedDepartment;
-    const matchesStatus = !selectedStatus || emp.status === selectedStatus;
-
-    return matchesSearch && matchesDepartment && matchesStatus;
-  });
-
-  // Estadísticas generales (sobre el total de empleados, no sobre el filtro activo)
-  const totalEmployees = employees.length;
-  const activeEmployees = employees.filter(emp => emp.status === 'active').length;
-  const onLeaveEmployees = employees.filter(emp => emp.status === 'on_leave').length;
-  const inactiveEmployees = employees.filter(emp => emp.status === 'inactive').length;
+  const createEmployee = useCreateEmployee();
+  const updateEmployee = useUpdateEmployee();
+  const deleteEmployee = useDeleteEmployee();
 
   const handleSelectEmployee = useCallback((employee: Employee) => {
     alert(`Empleado: ${employee.name}\nCargo: ${employee.position}\nDepartamento: ${employee.department}`);
@@ -56,23 +53,32 @@ function EmployeesPage() {
 
   const handleDeleteEmployee = useCallback((id: number) => {
     if (!confirm('¿Estás seguro de eliminar este empleado?')) return;
-    deleteEmployee(id);
+    deleteEmployee.mutate(id);
   }, [deleteEmployee]);
 
+  const nextStatus: Record<EmployeeStatus, EmployeeStatus> = useMemo(() => ({
+    active: 'on_leave',
+    on_leave: 'inactive',
+    inactive: 'active',
+  }), []);
+
   const handleToggleStatus = useCallback((employee: Employee) => {
-    const nextStatus: Record<EmployeeStatus, EmployeeStatus> = {
-      active: 'on_leave',
-      on_leave: 'inactive',
-      inactive: 'active',
-    };
-    updateEmployee(employee.id, { status: nextStatus[employee.status] });
-  }, [updateEmployee]);
+    updateEmployee.mutate({ id: employee.id, data: { status: nextStatus[employee.status] } });
+  }, [updateEmployee, nextStatus]);
 
   // Handler para agregar empleado
   const handleAddEmployee = useCallback(() => {
     if (!newName.trim() || !newEmail.trim() || !newPosition.trim() || !newHireDate) return;
 
-    const added = addEmployee({
+    // El API no valida emails duplicados por nosotros, así que lo revisamos
+    // del lado del cliente antes de mandar la mutación (misma regla de la Clase 6).
+    const emailTaken = allEmployees.some(emp => emp.email === newEmail.trim());
+    if (emailTaken) {
+      setFormError(`Ya existe un empleado con el email ${newEmail.trim()}.`);
+      return;
+    }
+
+    createEmployee.mutate({
       name: newName.trim(),
       email: newEmail.trim(),
       position: newPosition.trim(),
@@ -83,22 +89,26 @@ function EmployeesPage() {
       role: newRole,
       ...(newPhone.trim() && { phone: newPhone.trim() }),
       ...(newAvatarUrl.trim() && { avatarUrl: newAvatarUrl.trim() }),
+    }, {
+      onSuccess: () => {
+        setFormError(null);
+        setNewName('');
+        setNewEmail('');
+        setNewPosition('');
+        setNewDepartment('Tecnologia');
+        setNewSalary('');
+        setNewHireDate('');
+        setNewStatus('active');
+        setNewRole('employee');
+        setNewPhone('');
+        setNewAvatarUrl('');
+        setShowForm(false);
+      },
+      onError: () => {
+        setFormError('No se pudo crear el empleado. Intenta de nuevo.');
+      },
     });
-
-    if (!added) return;
-
-    setNewName('');
-    setNewEmail('');
-    setNewPosition('');
-    setNewDepartment('Tecnologia');
-    setNewSalary('');
-    setNewHireDate('');
-    setNewStatus('active');
-    setNewRole('employee');
-    setNewPhone('');
-    setNewAvatarUrl('');
-    setShowForm(false);
-  }, [addEmployee, newName, newEmail, newPosition, newDepartment, newSalary, newHireDate, newStatus, newRole, newPhone, newAvatarUrl]);
+  }, [allEmployees, createEmployee, newName, newEmail, newPosition, newDepartment, newSalary, newHireDate, newStatus, newRole, newPhone, newAvatarUrl]);
 
   // Listas y diccionarios de apoyo
   const departments: Department[] = ['Tecnologia', 'Recursos Humanos', 'Finanzas', 'Operaciones', 'Ventas'];
@@ -134,7 +144,7 @@ function EmployeesPage() {
         <div>
           <h2 style={{ margin: 0, color: '#1e293b' }}>Gestión de Empleados</h2>
           <p style={{ margin: '4px 0 0', color: '#64748b' }}>
-            {filteredEmployees.length} de {employees.length} empleados
+            {loading ? 'Cargando...' : `${employees.length} de ${totalEmployees} empleados`}
           </p>
         </div>
         <button
@@ -168,6 +178,11 @@ function EmployeesPage() {
         title="Nuevo empleado"
       >
         <div>
+          {formError && (
+            <div className="mb-4 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">
+              {formError}
+            </div>
+          )}
           <div style={{
             display: 'grid',
             gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))',
@@ -285,16 +300,18 @@ function EmployeesPage() {
           <div style={{ display: 'flex', gap: '8px' }}>
             <button
               onClick={handleAddEmployee}
+              disabled={createEmployee.isPending}
               style={{
                 padding: '8px 16px',
                 background: '#16a34a',
                 color: 'white',
                 border: 'none',
                 borderRadius: '6px',
-                cursor: 'pointer'
+                cursor: 'pointer',
+                opacity: createEmployee.isPending ? 0.6 : 1,
               }}
             >
-              Guardar
+              {createEmployee.isPending ? 'Guardando...' : 'Guardar'}
             </button>
             <button
               onClick={() => setShowForm(false)}
@@ -313,16 +330,19 @@ function EmployeesPage() {
         </div>
       </Modal>
 
-      {error && (
-        <div style={{
-          background: '#fee2e2',
-          color: '#dc2626',
-          padding: '10px 12px',
-          borderRadius: '6px',
-          marginBottom: '16px',
-          fontSize: '13px',
-        }}>
-          {error}
+      {loading && (
+        <div className="flex items-center justify-center py-16 text-slate-400">
+          <div className="animate-spin w-8 h-8 border-4 border-blue-200 border-t-blue-600 rounded-full mr-3" />
+          <span>Cargando empleados...</span>
+        </div>
+      )}
+
+      {isError && (
+        <div className="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
+          <p className="text-red-700 font-medium">Error al cargar los empleados</p>
+          <p className="text-red-500 text-sm mt-1">
+            {(queryError as Error)?.message || 'Error desconocido'}
+          </p>
         </div>
       )}
 
@@ -407,17 +427,15 @@ function EmployeesPage() {
         </div>
       )}
 
-      {/* Sin resultados */}
-      {!loading && filteredEmployees.length === 0 && (
+      {!loading && !isError && employees.length === 0 && (
         <div style={{ textAlign: 'center', padding: '48px', color: '#64748b' }}>
           <p>No se encontraron empleados con los filtros aplicados.</p>
         </div>
       )}
 
-      {/* Lista de empleados */}
-      {!loading && filteredEmployees.length > 0 && (
+      {!loading && !isError && employees.length > 0 && (
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
-          {filteredEmployees.map(employee => (
+          {employees.map(employee => (
             <div key={employee.id} style={{ position: 'relative' }}>
               <button
                 onClick={() => handleDeleteEmployee(employee.id)}
