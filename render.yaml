@@ -2,7 +2,7 @@ services:
   - type: static
     name: mini-rrhh
     staticPublishPath: ./dist
-    buildCommand: npm install && npm run build
+    buildCommand: npm ci && npm run build
     routes:
       - type: rewrite
         source: /*
