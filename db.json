@@ -66,6 +66,19 @@
       "hireDate": "2022-11-14",
       "status": "active",
       "role": "employee"
+    },
+    {
+      "name": "Pedro Test",
+      "email": "pedro@empresa.com",
+      "position": "Analista QA",
+      "department": "Tecnologia",
+      "salary": 8500,
+      "hireDate": "2026-09-12",
+      "role": "employee",
+      "status": "active",
+      "phone": "",
+      "avatarUrl": "",
+      "id": 7
     }
   ]
 }
