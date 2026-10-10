@@ -1,23 +1,41 @@
 // src/pages/NotFoundPage.tsx
-import { Link, useLocation } from 'react-router-dom';
+import { Link } from 'react-router-dom';
+import { usePageNotFound } from '../hooks/usePageNotFound';
 
 function NotFoundPage() {
-  const { pathname } = useLocation();
+  const missingUrl = usePageNotFound();
 
   return (
-    <div style={{ minHeight: '100vh', background: '#f8fafc', display: 'flex', alignItems: 'center', justifyContent: 'center', padding: '16px' }}>
-      <div style={{ textAlign: 'center' }}>
-        <p style={{ fontSize: '72px', fontWeight: 800, color: '#1e40af', margin: 0 }}>404</p>
-        <h2 style={{ color: '#1e293b', margin: '8px 0' }}>Página no encontrada</h2>
-        <p style={{ color: '#64748b', fontSize: '14px', marginBottom: '24px' }}>
-          No existe nada en <code>{pathname}</code>
+    <div className="min-h-screen bg-gradient-to-b from-slate-50 to-blue-50 flex items-center justify-center px-4">
+      <div className="w-full max-w-lg text-center">
+        <div className="relative inline-block mb-6">
+          <p className="text-[120px] sm:text-[160px] leading-none font-black text-blue-800/10 select-none">
+            404
+          </p>
+          <span className="absolute inset-0 flex items-center justify-center text-6xl" aria-hidden="true">
+            🧭
+          </span>
+        </div>
+
+        <h2 className="text-2xl sm:text-3xl font-bold text-slate-800 mb-3">
+          Te perdiste en la oficina
+        </h2>
+        <p className="text-slate-500 mb-4">
+          Buscamos en todos los departamentos y esta página no está en ninguno.
         </p>
-        <Link
-          to="/dashboard"
-          style={{ padding: '10px 20px', background: '#1e40af', color: 'white', borderRadius: '6px', textDecoration: 'none', fontSize: '14px' }}
-        >
-          Volver al inicio
-        </Link>
+
+        <p className="inline-block max-w-full truncate bg-white border border-slate-200 rounded-lg px-3 py-1.5 mb-8 font-mono text-sm text-slate-600">
+          {missingUrl}
+        </p>
+
+        <div>
+          <Link
+            to="/dashboard"
+            className="inline-flex items-center gap-2 px-6 py-3 bg-blue-800 text-white rounded-lg font-medium shadow-md hover:bg-blue-900 hover:shadow-lg transition-all duration-200"
+          >
+            ← Volver al dashboard
+          </Link>
+        </div>
       </div>
     </div>
   );
