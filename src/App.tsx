@@ -1,13 +1,19 @@
 // src/App.tsx
+import { useEffect } from 'react';
 import type { ReactNode } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, Link, useNavigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import { Toaster } from 'react-hot-toast';
 import Header from './layouts/Header';
 import LoginPage from './pages/LoginPage';
 import DashboardPage from './pages/DashboardPage';
 import EmployeesPage from './pages/EmployeesPage';
 import EmployeeDetailPage from './pages/EmployeeDetailPage';
+import NotFoundPage from './pages/NotFoundPage';
 import ProtectedRoute from './components/ProtectedRoute';
+import RequireRole from './components/RequireRole';
 import { useAuthStore } from './store/authStore';
+
+const SESSION_CHECK_MS = 4 * 60 * 1000; // revisar el token cada 4 minutos
 
 // Layout con Header para páginas autenticadas
 function AppLayout({ children }: { children: ReactNode }) {
@@ -28,6 +34,16 @@ function AppLayout({ children }: { children: ReactNode }) {
 }
 
 function App() {
+  const verifySession = useAuthStore((state) => state.verifySession);
+
+  // Renueva el access token en segundo plano antes de que el usuario
+  // se tope con un 401
+  useEffect(() => {
+    verifySession();
+    const timer = setInterval(verifySession, SESSION_CHECK_MS);
+    return () => clearInterval(timer);
+  }, [verifySession]);
+
   return (
     <BrowserRouter>
       <Routes>
@@ -43,10 +59,13 @@ function App() {
           </ProtectedRoute>
         } />
 
+        {/* Empleados: solo ADMIN y HR_MANAGER */}
         <Route path="/empleados" element={
           <ProtectedRoute>
             <AppLayout>
-              <EmployeesPage />
+              <RequireRole permission="viewEmployees">
+                <EmployeesPage />
+              </RequireRole>
             </AppLayout>
           </ProtectedRoute>
         } />
@@ -54,7 +73,9 @@ function App() {
         <Route path="/empleados/:id" element={
           <ProtectedRoute>
             <AppLayout>
-              <EmployeeDetailPage />
+              <RequireRole permission="viewEmployees">
+                <EmployeeDetailPage />
+              </RequireRole>
             </AppLayout>
           </ProtectedRoute>
         } />
@@ -63,13 +84,17 @@ function App() {
         <Route path="/" element={<Navigate to="/dashboard" replace />} />
 
         {/* 404 */}
-        <Route path="*" element={
-          <div style={{ minHeight: '100vh', background: '#f8fafc', textAlign: 'center', padding: '80px' }}>
-            <h2 style={{ color: '#1e293b' }}>404 - Página no encontrada</h2>
-            <Link to="/dashboard">Volver al inicio</Link>
-          </div>
-        } />
+        <Route path="*" element={<NotFoundPage />} />
       </Routes>
+
+      <Toaster
+        position="bottom-right"
+        toastOptions={{
+          duration: 4000,
+          style: { fontSize: '14px', borderRadius: '8px' },
+          error: { duration: 6000 },
+        }}
+      />
     </BrowserRouter>
   );
 }

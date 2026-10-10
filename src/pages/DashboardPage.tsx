@@ -2,9 +2,11 @@
 import { Link } from 'react-router-dom';
 import { useAuthStore } from '../store/authStore';
 import { useEmployees } from '../hooks/useEmployees';
+import { usePermissions } from '../hooks/usePermissions';
 
 function DashboardPage() {
-  const userName = useAuthStore((state) => state.user?.name) || 'invitado';
+  const userName = useAuthStore((state) => state.user?.firstName) || 'invitado';
+  const { can } = usePermissions();
 
   // Mismos datos que EmployeesPage — TanStack Query comparte el cache entre
   // ambas pantallas, así que esto no dispara una petición nueva si ya se
@@ -39,14 +41,17 @@ function DashboardPage() {
         ))}
       </div>
 
-      <div className="flex gap-3">
-        <Link
-          to="/empleados"
-          className="px-5 py-2.5 bg-blue-800 text-white rounded-md no-underline text-sm hover:bg-blue-900 transition-colors duration-200"
-        >
-          Ver empleados →
-        </Link>
-      </div>
+      {/* El rol EMPLOYEE no gestiona empleados, así que no ve el acceso */}
+      {can('viewEmployees') && (
+        <div className="flex gap-3">
+          <Link
+            to="/empleados"
+            className="px-5 py-2.5 bg-blue-800 text-white rounded-md no-underline text-sm hover:bg-blue-900 transition-colors duration-200"
+          >
+            Ver empleados →
+          </Link>
+        </div>
+      )}
     </div>
   );
 }

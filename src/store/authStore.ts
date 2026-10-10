@@ -1,84 +1,108 @@
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { LoginCredentials, User } from '../types';
+import toast from 'react-hot-toast';
+import type { LoginCredentials, Session, SessionUser } from '../types';
+import { authService } from '../services/authService';
+import { getErrorMessage } from '../utils/errors';
+import { tokenExpired } from '../utils/jwt';
 
 interface AuthState {
-  user: User | null;
+  user: SessionUser | null;
+  accessToken: string | null;
+  refreshToken: string | null;
   isAuthenticated: boolean;
   isLoading: boolean;
   error: string | null;
   login: (credentials: LoginCredentials) => Promise<void>;
   logout: () => void;
+  renewSession: () => Promise<boolean>;
+  verifySession: () => Promise<void>;
   clearError: () => void;
 }
 
-const demoUsers: Array<User & { password: string }> = [
-  {
-    id: 1,
-    name: 'Roberto Silva',
-    email: 'admin@empresa.com',
-    role: 'admin',
-    token: 'mock-token-admin',
-    password: '123456',
-  },
-  {
-    id: 2,
-    name: 'Carlos Martínez',
-    email: 'rrhh@empresa.com',
-    role: 'hr',
-    token: 'mock-token-hr',
-    password: '123456',
-  },
-  {
-    id: 3,
-    name: 'Ana García',
-    email: 'empleado@empresa.com',
-    role: 'employee',
-    token: 'mock-token-employee',
-    password: '123456',
-  },
-];
+const emptySession = {
+  user: null,
+  accessToken: null,
+  refreshToken: null,
+  isAuthenticated: false,
+};
+
+const fromSession = (session: Session) => ({ ...session, isAuthenticated: true });
+
+// Como el refresh token solo sirve una vez, si dos partes de la app piden
+// renovar al mismo tiempo (p. ej. StrictMode) ambas esperan la misma petición.
+let pendingRenewal: Promise<boolean> | null = null;
 
 export const useAuthStore = create<AuthState>()(
   persist(
-    (set) => ({
-      user: null,
-      isAuthenticated: false,
+    (set, get) => ({
+      ...emptySession,
       isLoading: false,
       error: null,
-      login: async ({ email, password }) => {
+
+      login: async (credentials) => {
         set({ isLoading: true, error: null });
-        await new Promise((resolve) => setTimeout(resolve, 800));
-
-        const demoUser = demoUsers.find(
-          (candidate) => candidate.email === email && candidate.password === password,
-        );
-
-        if (!demoUser) {
-          set({
-            isLoading: false,
-            error: 'Credenciales incorrectas. Usa cualquier email demo con contraseña: 123456',
-          });
-          return;
+        try {
+          const session = await authService.login(credentials);
+          set({ ...fromSession(session), isLoading: false });
+          toast.success(`¡Hola, ${session.user.firstName}!`);
+        } catch (err) {
+          set({ isLoading: false, error: getErrorMessage(err) });
         }
-
-        const user: User = {
-          id: demoUser.id,
-          name: demoUser.name,
-          email: demoUser.email,
-          role: demoUser.role,
-          token: demoUser.token,
-        };
-        set({ user, isAuthenticated: true, isLoading: false, error: null });
       },
-      logout: () => set({ user: null, isAuthenticated: false, error: null }),
+
+      logout: () => {
+        const { accessToken, refreshToken } = get();
+        set(emptySession);
+        if (accessToken && refreshToken) {
+          // Si la API falla aquí no importa: la sesión local ya se cerró
+          authService.logout(refreshToken, accessToken).catch(() => {});
+          toast.success('Cerraste sesión.');
+        }
+      },
+
+      renewSession: () => {
+        if (pendingRenewal) return pendingRenewal;
+
+        const { refreshToken } = get();
+        if (!refreshToken) return Promise.resolve(false);
+
+        pendingRenewal = authService
+          .refresh(refreshToken)
+          .then((session) => {
+            set(fromSession(session));
+            return true;
+          })
+          .catch(() => {
+            set(emptySession);
+            toast.error('Tu sesión expiró. Vuelve a iniciar sesión.', { id: 'session-expired' });
+            return false;
+          })
+          .finally(() => {
+            pendingRenewal = null;
+          });
+
+        return pendingRenewal;
+      },
+
+      // Se llama al abrir la app y cada pocos minutos: si el access token
+      // venció intenta renovarlo sin que el usuario lo note.
+      verifySession: async () => {
+        const { accessToken, renewSession } = get();
+        if (accessToken && tokenExpired(accessToken)) {
+          await renewSession();
+        }
+      },
+
       clearError: () => set({ error: null }),
     }),
     {
-      name: 'auth-storage',
-      partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
+      name: 'mini-rrhh-session',
+      partialize: ({ user, accessToken, refreshToken, isAuthenticated }) => ({
+        user,
+        accessToken,
+        refreshToken,
+        isAuthenticated,
       }),
     },
   ),

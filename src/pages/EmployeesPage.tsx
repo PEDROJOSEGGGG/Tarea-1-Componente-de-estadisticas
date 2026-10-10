@@ -9,6 +9,8 @@ import Modal from '../components/Modal';
 import EmployeeForm from '../components/EmployeeForm';
 import { useEmployees, useCreateEmployee, useUpdateEmployee, useDeleteEmployee } from '../hooks/useEmployees';
 import type { EmployeeFormData } from '../schemas/employeeSchema';
+import { usePermissions } from '../hooks/usePermissions';
+import { getErrorMessage } from '../utils/errors';
 
 const formFieldStyle = {
   padding: '8px 12px',
@@ -29,12 +31,15 @@ const nextStatus: Record<EmployeeStatus, EmployeeStatus> = {
 
 function EmployeesPage() {
   const navigate = useNavigate();
+  // A esta página solo llegan ADMIN y HR_MANAGER (RequireRole en App.tsx),
+  // pero borrar empleados es exclusivo de ADMIN.
+  const { can } = usePermissions();
 
   const [search, setSearch] = useState<string>('');
   const [selectedDepartment, setSelectedDepartment] = useState<Department | ''>('');
   const [selectedStatus, setSelectedStatus] = useState<EmployeeStatus | ''>('');
 
-  const { data, isLoading: loading, isError, error: queryError } = useEmployees({
+  const { data, isLoading: loading, isError, error: queryError, refetch, isFetching } = useEmployees({
     search: search || undefined,
     department: selectedDepartment || undefined,
     status: selectedStatus || undefined,
@@ -93,8 +98,8 @@ function EmployeesPage() {
         await createEmployee.mutateAsync(formData);
       }
       setModalOpen(false);
-    } catch {
-      setSubmitError('No se pudo guardar el empleado. Intenta de nuevo.');
+    } catch (err) {
+      setSubmitError(getErrorMessage(err));
     }
   }, [editingEmployee, createEmployee, updateEmployee]);
 
@@ -216,8 +221,25 @@ function EmployeesPage() {
         <div style={{ background: '#fef2f2', border: '1px solid #fecaca', padding: '24px', textAlign: 'center', borderRadius: '12px' }}>
           <p style={{ color: '#b91c1c', fontWeight: 600 }}>Error al cargar los empleados</p>
           <p style={{ color: '#ef4444', marginTop: '8px' }}>
-            {(queryError as Error)?.message || 'Error desconocido'}
+            {getErrorMessage(queryError)}
           </p>
+          <button
+            onClick={() => refetch()}
+            disabled={isFetching}
+            style={{
+              marginTop: '16px',
+              padding: '8px 16px',
+              background: '#dc2626',
+              color: 'white',
+              border: 'none',
+              borderRadius: '6px',
+              cursor: isFetching ? 'wait' : 'pointer',
+              opacity: isFetching ? 0.6 : 1,
+              fontSize: '14px',
+            }}
+          >
+            {isFetching ? 'Reintentando...' : 'Reintentar'}
+          </button>
         </div>
       )}
 
@@ -231,7 +253,7 @@ function EmployeesPage() {
         <div style={{ display: 'flex', gap: '16px', flexWrap: 'wrap' }}>
           {employees.map((employee) => (
             <div key={employee.id} style={{ position: 'relative' }}>
-              <button
+              {can('deleteEmployees') && <button
                 onClick={() => handleDeleteEmployee(employee.id)}
                 aria-label="Eliminar empleado"
                 title="Eliminar empleado"
@@ -253,7 +275,7 @@ function EmployeesPage() {
                 }}
               >
                 ×
-              </button>
+              </button>}
               <button
                 onClick={() => handleOpenEdit(employee)}
                 aria-label="Editar empleado"

@@ -37,7 +37,7 @@ function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@empresa.com"
+              placeholder="usuario@empresa.com"
               required
               disabled={isLoading}
               style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box' }}
@@ -74,9 +74,15 @@ function LoginPage() {
           </button>
         </form>
 
-        <p style={{ marginTop: '16px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
-          Demo: admin@empresa.com, rrhh@empresa.com o empleado@empresa.com / 123456
-        </p>
+        {/* Las cuentas de prueba solo existen en el servidor local (mock-server.js) */}
+        {!import.meta.env.VITE_AUTH_API_URL && (
+          <div style={{ marginTop: '16px', fontSize: '12px', color: '#94a3b8', textAlign: 'center', lineHeight: 1.6 }}>
+            <p style={{ margin: 0 }}>Cuentas de prueba (servidor local):</p>
+            <p style={{ margin: 0 }}>admin@empresa.com / Admin123!</p>
+            <p style={{ margin: 0 }}>rrhh@empresa.com / Rrhh123!</p>
+            <p style={{ margin: 0 }}>empleado@empresa.com / Empleado123!</p>
+          </div>
+        )}
       </div>
     </div>
   );

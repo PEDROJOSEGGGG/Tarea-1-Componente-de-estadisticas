@@ -35,14 +35,25 @@ export type Department =
     export type CreateEmployeeDto = Omit<Employee, "id">;
     export type UpdateEmployeeDto = Partial<CreateEmployeeDto>;
     
-    // --- Tipos de autenticación ---
-    
-    export interface User {
-    id: number;
-    name: string;
+    // --- Tipos de autenticación (API-RH) ---
+
+    // Roles que devuelve la API-RH en el login. No son los mismos que
+    // EmployeeRole, que es solo un campo del empleado en JSON Server.
+    export type UserRole = "ADMIN" | "HR_MANAGER" | "EMPLOYEE";
+
+    export interface SessionUser {
+    id: string;
     email: string;
-    role: EmployeeRole;
-    token: string;
+    firstName: string;
+    lastName: string;
+    role: UserRole;
+    roleName: string;
+    }
+
+    export interface Session {
+    user: SessionUser;
+    accessToken: string;
+    refreshToken: string;
     }
     
     export interface LoginCredentials {
@@ -72,5 +83,5 @@ export type Department =
     label: string;
     path: string;
     icon: string;
-    allowedRoles: EmployeeRole[];
+    roles: UserRole[];
     }
