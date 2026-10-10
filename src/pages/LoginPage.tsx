@@ -37,7 +37,7 @@ function LoginPage() {
               type="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              placeholder="admin@empresa.com"
+              placeholder="usuario@empresa.com"
               required
               disabled={isLoading}
               style={{ width: '100%', padding: '10px 12px', border: '1px solid #e2e8f0', borderRadius: '6px', fontSize: '14px', boxSizing: 'border-box' }}
@@ -75,7 +75,7 @@ function LoginPage() {
         </form>
 
         <p style={{ marginTop: '16px', fontSize: '12px', color: '#94a3b8', textAlign: 'center' }}>
-          Demo: admin@empresa.com, rrhh@empresa.com o empleado@empresa.com / 123456
+          Usa la cuenta que te asignaron en la API-RH
         </p>
       </div>
     </div>

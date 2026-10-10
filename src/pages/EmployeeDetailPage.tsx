@@ -1,5 +1,6 @@
 import { useParams, useNavigate } from 'react-router-dom';
 import { useEmployee } from '../hooks/useEmployees';
+import { getErrorMessage } from '../utils/errors';
 
 export default function EmployeeDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -43,7 +44,7 @@ export default function EmployeeDetailPage() {
             color: '#991b1b',
           }}
         >
-          Error: {error instanceof Error ? error.message : 'No se pudo cargar el empleado'}
+          No se pudo cargar el empleado: {getErrorMessage(error)}
         </div>
         <button
           onClick={() => navigate('/empleados')}
