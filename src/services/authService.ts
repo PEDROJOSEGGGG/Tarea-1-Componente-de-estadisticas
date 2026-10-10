@@ -3,8 +3,11 @@ import axios from 'axios';
 import type { LoginCredentials, Session, UserRole } from '../types';
 
 // Cliente aparte para la API-RH: la API de empleados (JSON Server) no usa tokens.
+// Sin VITE_AUTH_API_URL usa el servidor local (mock-server.js), que imita la API-RH.
+const AUTH_URL = import.meta.env.VITE_AUTH_API_URL || 'http://localhost:3001';
+
 export const authClient = axios.create({
-  baseURL: `${import.meta.env.VITE_AUTH_API_URL ?? ''}/api/v1`,
+  baseURL: `${AUTH_URL}/api/v1`,
   headers: { 'Content-Type': 'application/json' },
   timeout: 10000,
 });

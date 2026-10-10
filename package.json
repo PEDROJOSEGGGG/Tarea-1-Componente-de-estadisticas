@@ -9,7 +9,7 @@
     "start": "vite preview --host 0.0.0.0 --port $PORT",
     "lint": "eslint .",
     "preview": "vite preview",
-    "mock-api": "json-server --watch db.json --port 3001"
+    "mock-api": "node mock-server.js"
   },
   "dependencies": {
     "@hookform/resolvers": "^5.9.1",
